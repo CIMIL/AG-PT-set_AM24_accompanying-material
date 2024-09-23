@@ -12,24 +12,24 @@ Plots in the paper for the first task are already box plots, so no need to add e
 
 # 2. Percussive/Pitched Binary Classification Task (BC)
 
-Results with KNN:  
+Results with KNN:    
 ![Alt text](taskB_KNN_results.svg)
 
-Results with ResNet:  
+Results with ResNet:    
 ![Alt text](taskB_ResNet_results.svg)
 
 # 3. Dynamics Classification Task (DC)
 
-Results with KNN:
+Results with KNN:  
 ![Alt text](taskC_KNN_results.svg)
 
-Results with ResNet:
+Results with ResNet:  
 ![Alt text](taskC_ResNet_results.svg)
 
 # 4. Multiclass Playing Technique Classification (TC)
 
-Results with KNN:
+Results with KNN:  
 ![Alt text](taskD_KNN_results.svg)
 
-Results with ResNet:
+Results with ResNet:  
 ![Alt text](taskD_ResNet_results.svg)
