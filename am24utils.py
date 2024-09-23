@@ -83,7 +83,7 @@ class Run():
             return True
         return False
 
-def compute_mean_f1(run: Run):
+def compute_mean_std_f1(run: Run):
     fold_f1_mavgs = []
     for fold in run.foldresults:
         keys = list(fold['dictclassifiction_report'].keys())
@@ -96,7 +96,8 @@ def compute_mean_f1(run: Run):
             class_f1s.append(fold['dictclassifiction_report'][curclass]['f1-score'])
         fold_f1_mavgs.append(sum(class_f1s) / len(class_f1s))
     run_f1_mavg = sum(fold_f1_mavgs) / len(fold_f1_mavgs)
-    return run_f1_mavg
+    run_f1_std = np.std(fold_f1_mavgs)
+    return run_f1_mavg, run_f1_std
 
 
 def get_run_list(winsizes:list           = WINDOWSIZES_DEFAULT_VALUES,
@@ -119,7 +120,7 @@ def get_run_list(winsizes:list           = WINDOWSIZES_DEFAULT_VALUES,
     return sorted(runs)
 
 
-def plot_runs(to_run, arg_metric = 'mean_accuracy', arg_plottype = 'bar', color='tab:blue', title=None, groundTruthBar_color = 'w',boldline=1.1, groundtruth_linestyle='-'):
+def plot_runs(to_run, arg_metric = 'mean_accuracy', arg_plottype = 'bar', color='tab:blue', title=None, groundTruthBar_color = 'w',boldline=1.1, groundtruth_linestyle='-', errorbars='std'):
     if arg_metric == 'mean_accuracy':
         arg_metric_LABEL = 'Mean Accuracy'
     elif arg_metric == 'mean_f1':
@@ -132,7 +133,8 @@ def plot_runs(to_run, arg_metric = 'mean_accuracy', arg_plottype = 'bar', color=
         # In this case we explicitely compute the mean F1 score if not already a key of the results dict
         for r in to_run:
             if 'mean_f1' not in r.results:
-                r.results['mean_f1'] = compute_mean_f1(r)
+                r.results['mean_f1'],r.results['std_f1'] = compute_mean_std_f1(r)
+
 
     bar_width = 0.7
     bar_space = 0.4
@@ -180,6 +182,36 @@ def plot_runs(to_run, arg_metric = 'mean_accuracy', arg_plottype = 'bar', color=
         if arg_plottype == 'bar':
             curcolor = matplotlibpalette[color] if r.onset_perturbation_max_samples != 0 else groundTruthBar_color
             ax.bar(x_positions[i], r.results[arg_metric], bar_width, label=r.name, color=curcolor, edgecolor='k', linewidth=curlinewidth)
+            if errorbars is not None:
+                
+                if arg_metric == 'mean_accuracy':
+                    errormetric = 'std_accuracy'     # Computation not implemented yet
+                    assert errormetric in r.results.keys(), 'Key "%s" not present in dictionary r.results'%(errormetric)
+                elif arg_metric == 'mean_f1':
+                    errormetric = 'std_f1'
+                    assert errormetric in r.results.keys(), 'Key "%s" not present in dictionary r.results'%(errormetric)
+                elif arg_metric == 'errors':
+                    errormetric = 'std_errors' # Computation not implemented yet
+                    assert errormetric in r.results.keys(), 'Key "%s" not present in dictionary r.results'%(errormetric)
+                else:
+                    raise ValueError('Unknown metric')
+                
+                #-----------------------------------------------------------#
+                #                                                           #
+                #-----------------------------------------------------------#
+
+                if errorbars == 'std':
+                    errorvalues = r.results[errormetric]
+                elif errorbars == 'sem':
+                    assert len(r.foldresults) > 0, 'No fold results present in Run object'
+                    assert len(r.foldresults) == 3, 'Only 3 fold results expected  in Run object'
+                    errorvalues = r.results[errormetric]/np.sqrt(len(r.foldresults))
+                else:
+                    raise ValueError('Unknown errorbars type. Choose between None, "std" (standard deviation) and "sem" (standard error of the mean)')
+
+
+                ax.errorbar(x_positions[i], r.results[arg_metric], yerr=errorvalues, 
+                            fmt='', color='black', capsize=4, capthick=1, elinewidth=1)
         elif arg_plottype == 'box':
             ax.boxplot(r.results[arg_metric], positions=[x_positions[i]], widths=bar_width, labels=[r.name],whiskerprops = dict(linestyle=curlinestyle,linewidth=curlinewidth, color='black'),boxprops= dict(linestyle=curlinestyle,linewidth=curlinewidth, color='black'),capprops= dict(linewidth=curlinewidth, color='black'))
         else:
